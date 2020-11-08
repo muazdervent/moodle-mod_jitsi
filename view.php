@@ -120,7 +120,7 @@ for ($i = 0; $i < $max; $i++) {
 $avatar = $CFG->wwwroot.'/user/pix.php/'.$USER->id.'/f1.jpg';
 $urlparams = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
     'courseid' => $course->id, 'cmid' => $id, 't' => $moderation);
-
+/*
 $today = getdate();
 if ( ( $today[0] > (($jitsi->timeopen) - ($jitsi->minpretime * 60)) && $today[0] < (($jitsi->timeopen) + (2*60*60) ) )||
     (in_array('editingteacher', $rolestr) == 1)) {
@@ -134,6 +134,7 @@ if ( ( $today[0] > (($jitsi->timeopen) - ($jitsi->minpretime * 60)) && $today[0]
     	echo "<br>Oturuma erişim süresi doldu!";
     }
 }
+ */
 
 $db_ip = "x.x.x.x";           //replace  
 $db_port = "3306";            //these
@@ -141,14 +142,100 @@ $db_username = "user";        //parameters
 $db_password = "password";    //with
 $db_db_name = "jitsi_moodle"; //yours
 
-
 $sessionnorm = str_replace(array(' ', ':', '"'), '', $sesparam);
 $sessionnorm = str_replace(array('Ğ', 'ğ','İ','ı','ü','Ü','ç','Ç','ö','Ö','ş','Ş'), array('G','g','I','i','u','U','c','C','o','O','s','S'), $sessionnorm);
 
-echo "$sessionnorm";
+
+if ( (in_array('editingteacher', $rolestr) == 1) || (in_array('manager', $rolestr) == 1) || (in_array('coursecreator', $rolestr) == 1) ) {
+    echo $OUTPUT->box(get_string('instruction', 'jitsi'));
+    echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/session.php', $urlparams), get_string('access', 'jitsi'), 'post');
+}else{
+	$link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
+	  
+	 	 $sql = "SELECT jitsi_web_port FROM jibri_sessions where session_id='".$sessionnorm."'";
+	 	 if($result = mysqli_query($link, $sql)){
+	 	   if(mysqli_num_rows($result) > 0){
+                echo $OUTPUT->box(get_string('instruction', 'jitsi'));
+                echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/session.php', $urlparams), get_string('access', 'jitsi'), 'post');
+	            
+	 	    } else{
+	 	       echo "<br><td> Meeting not found! Please wait for the instructor to start the meeting! </td>";
+            }
+            mysqli_free_result($result);
+		} else{
+		   // echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+		    echo "Database connection ERROR! Code:321 .Report the code to the system administrator if the error occurs again.";
+		}
+		 
+		// Close connection
+		mysqli_close($link);
+}
+
+
+$sessionnorm = str_replace(array(' ', ':', '"'), '', $sesparam);
+if ( in_array('editingteacher', $rolestr) == 1 || (in_array('manager', $rolestr) == 1) || (in_array('coursecreator', $rolestr) == 1) ){
+    
+    $link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
+	  
+	 	 $sql = "SELECT jitsi_web_port FROM jibri_sessions where session_id='".$sessionnorm."'";
+	 	 if($result = mysqli_query($link, $sql)){
+	 	   if(mysqli_num_rows($result) > 0){
+            echo '<form method="post">';
+            echo '<input type="submit" name="buttonsp" id="buttonsp" value="Finish Meeting" /><br/>';
+            echo '</form>';
+	            
+	 	    }
+            mysqli_free_result($result);
+		} else{
+		   // echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+           echo "Database connection ERROR! Code:321 .Report the code to the system administrator if the error occurs again.";
+		}
+		 
+		// Close connection
+		mysqli_close($link);
+
+	if(isset($_POST['buttonsp'])){
+        	
+		$link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
+	  
+        $sql = "SELECT jitsi_web_port FROM jibri_sessions where session_id='".$sessionnorm."'";
+	 	if($result = mysqli_query($link, $sql)){
+	 	   if(mysqli_num_rows($result) > 0){
+	 	       while($row = mysqli_fetch_array($result)){
+				//The URL with parameters / query string.
+		        $url = "http://your_node_js_ip_and_port/destroy_jitsi_deployment?param1=destroy&param2=".$row['session_web_port'];
+		        //Once again, we use file_get_contents to GET the URL in question.
+		        $contents = file_get_contents($url);
+
+		        //If $contents is not a boolean FALSE value.
+		        if($contents !== "unavaible"){
+		             //Print out the contents.
+		             echo "Toplantı başarı ile bitirildi.";
+		        }
+
+	 	       }
+	        // Free result set
+	        mysqli_free_result($result);
+	 	   } else{
+            echo "<br><td> Meeting not found! Please wait for the instructor to start the meeting! </td>";
+	 	   }
+		} else{
+		   // echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+		    echo "Database connection ERROR: 321";
+		}
+		 
+		// Close connection
+		mysqli_close($link);
+	
+	}
+	
+}
+
+
+
+
 $link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
-  
-  $sql = "SELECT video_record_path FROM jitsi_conference_records where session_id='".$sessionnorm."'";
+$sql = "SELECT video_record_path FROM jitsi_conference_records where session_id='".$sessionnorm."'";
 if($result = mysqli_query($link, $sql)){
     if(mysqli_num_rows($result) > 0){
 	    $counter=1;
@@ -160,11 +247,11 @@ if($result = mysqli_query($link, $sql)){
         // Free result set
         mysqli_free_result($result);
     } else{
-        echo "<br><td> Ders kaydı bulunamadı! </td>";
+        echo "<br><td> Record not found! </td>";
     }
 } else{
    // echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
-    echo "Database baglanti hatasi ERROR: 321";
+    echo "Database connection ERROR: 321";
 }
  
 // Close connection
