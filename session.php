@@ -40,6 +40,7 @@ $cmid = required_param('cmid', PARAM_INT);
 $nombre = required_param('nom', PARAM_TEXT);
 $session = required_param('ses', PARAM_TEXT);
 $sessionnorm = str_replace(array(' ', ':', '"'), '', $session);
+$sessionnorm = str_replace(array('Ğ', 'ğ','İ','ı','ü','Ü','ç','Ç','ö','Ö','ş','Ş'), array('G','g','I','i','u','U','c','C','o','O','s','S'), $sessionnorm);
 $avatar = required_param('avatar', PARAM_TEXT);
 $teacher = required_param('t', PARAM_BOOL);
 require_login($courseid);
