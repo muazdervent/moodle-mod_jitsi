@@ -235,23 +235,25 @@ if ( in_array('editingteacher', $rolestr) == 1 || (in_array('manager', $rolestr)
 
 
 $link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
-$sql = "SELECT video_record_path FROM jitsi_conference_records where session_id='".$sessionnorm."'";
+$sql = "SELECT video_record_path, create_time FROM jitsi_conference_records where session_id='".$sessionnorm."'";
 if($result = mysqli_query($link, $sql)){
+    echo "<table><tr><th>Video Records</th></tr>";
     if(mysqli_num_rows($result) > 0){
 	    $counter=1;
         while($row = mysqli_fetch_array($result)){
-            while($row = mysqli_fetch_array($result)){
-                $urlparams1 = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
-                    'courseid' => $course->id, 'cmid' => $id, 't' => $moderation, 'vid' => $row['record_path']);
-                echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/watch.php', $urlparams1), "Video Records - ".$sayac, 'post');    
+            echo "<tr><td>";
+            $urlparams1 = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
+                'courseid' => $course->id, 'cmid' => $id, 't' => $moderation, 'vid' => $row['record_path']);
+                echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/watch.php', $urlparams1), "Ders Kaydi - ".$sayac."- ".date('d.m.Y H:i', strtotime($row['create_time'])), 'post');
+                echo "<td></tr>";              
             $counter=$counter + 1;
         }
-        echo "</table>";
         // Free result set
         mysqli_free_result($result);
     } else{
         echo "<br><td> Record not found! </td>";
     }
+    echo "</table>"
 } else{
    // echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
     echo "Database connection ERROR: 321";
