@@ -21,7 +21,7 @@
  * if you like, and it can span multiple lines.
  *
  * @package    mod_jitsi
- * @copyright  2019 Sergio Comerón <sergiocomeron@icloud.com>
+ * @copyright  2020 Muaz Dervent <muazdervent@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -122,13 +122,54 @@ $urlparams = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
     'courseid' => $course->id, 'cmid' => $id, 't' => $moderation);
 
 $today = getdate();
-if ($today[0] > (($jitsi->timeopen) - ($jitsi->minpretime * 60))||
+if ( ( $today[0] > (($jitsi->timeopen) - ($jitsi->minpretime * 60)) && $today[0] < (($jitsi->timeopen) + (2*60*60) ) )||
     (in_array('editingteacher', $rolestr) == 1)) {
     echo $OUTPUT->box(get_string('instruction', 'jitsi'));
     echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/session.php', $urlparams), get_string('access', 'jitsi'), 'post');
 } else {
-    echo $OUTPUT->box(get_string('nostart', 'jitsi', $jitsi->minpretime));
+    if ( ( $today[0] < (($jitsi->timeopen) - ($jitsi->minpretime * 60))  ) ){ //basalam suresi henuz gelmediysa zamani gelince baslayacak yaziyor
+    	echo $OUTPUT->box(get_string('nostart', 'jitsi', $jitsi->minpretime));
+    }
+    if ( $today[0] > (($jitsi->timeopen) + (2*60*60)) ){ // baslangic suresi 2 saati gectiyse erisim suresi doldu yazıyor.
+    	echo "<br>Oturuma erişim süresi doldu!";
+    }
 }
+
+$db_ip = "x.x.x.x";           //replace  
+$db_port = "3306";            //these
+$db_username = "user";        //parameters
+$db_password = "password";    //with
+$db_db_name = "jitsi_moodle"; //yours
+
+
+$sessionnorm = str_replace(array(' ', ':', '"'), '', $sesparam);
+$sessionnorm = str_replace(array('Ğ', 'ğ','İ','ı','ü','Ü','ç','Ç','ö','Ö','ş','Ş'), array('G','g','I','i','u','U','c','C','o','O','s','S'), $sessionnorm);
+
+echo "$sessionnorm";
+$link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
+  
+  $sql = "SELECT video_record_path FROM jitsi_conference_records where session_id='".$sessionnorm."'";
+if($result = mysqli_query($link, $sql)){
+    if(mysqli_num_rows($result) > 0){
+	    $counter=1;
+        while($row = mysqli_fetch_array($result)){
+            echo "<br><td><a href='" . $row['video_record_path'] . "'>Video record -".$counter."</a></td>";
+            $counter=$counter + 1;
+        }
+        echo "</table>";
+        // Free result set
+        mysqli_free_result($result);
+    } else{
+        echo "<br><td> Ders kaydı bulunamadı! </td>";
+    }
+} else{
+   // echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+    echo "Database baglanti hatasi ERROR: 321";
+}
+ 
+// Close connection
+mysqli_close($link);
+
 echo $CFG->jitsi_help;
 echo $OUTPUT->footer();
 
