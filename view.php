@@ -120,21 +120,7 @@ for ($i = 0; $i < $max; $i++) {
 $avatar = $CFG->wwwroot.'/user/pix.php/'.$USER->id.'/f1.jpg';
 $urlparams = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
     'courseid' => $course->id, 'cmid' => $id, 't' => $moderation);
-/*
-$today = getdate();
-if ( ( $today[0] > (($jitsi->timeopen) - ($jitsi->minpretime * 60)) && $today[0] < (($jitsi->timeopen) + (2*60*60) ) )||
-    (in_array('editingteacher', $rolestr) == 1)) {
-    echo $OUTPUT->box(get_string('instruction', 'jitsi'));
-    echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/session.php', $urlparams), get_string('access', 'jitsi'), 'post');
-} else {
-    if ( ( $today[0] < (($jitsi->timeopen) - ($jitsi->minpretime * 60))  ) ){ //basalam suresi henuz gelmediysa zamani gelince baslayacak yaziyor
-    	echo $OUTPUT->box(get_string('nostart', 'jitsi', $jitsi->minpretime));
-    }
-    if ( $today[0] > (($jitsi->timeopen) + (2*60*60)) ){ // baslangic suresi 2 saati gectiyse erisim suresi doldu yazıyor.
-    	echo "<br>Oturuma erişim süresi doldu!";
-    }
-}
- */
+
 
 $db_ip = "x.x.x.x";           //replace  
 $db_port = "3306";            //these
@@ -172,7 +158,7 @@ if ( (in_array('editingteacher', $rolestr) == 1) || (in_array('manager', $rolest
 }
 
 
-$sessionnorm = str_replace(array(' ', ':', '"'), '', $sesparam);
+
 if ( in_array('editingteacher', $rolestr) == 1 || (in_array('manager', $rolestr) == 1) || (in_array('coursecreator', $rolestr) == 1) ){
     
     $link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
@@ -203,7 +189,7 @@ if ( in_array('editingteacher', $rolestr) == 1 || (in_array('manager', $rolestr)
 	 	   if(mysqli_num_rows($result) > 0){
 	 	       while($row = mysqli_fetch_array($result)){
 				//The URL with parameters / query string.
-		        $url = "http://your_node_js_ip_and_port/destroy_jitsi_deployment?param1=destroy&param2=".$row['session_web_port'];
+		        $url = "http://*******your_node_js_ip_and_port******/destroy_jitsi_deployment?param1=destroy&param2=".$row['session_web_port'];
 		        //Once again, we use file_get_contents to GET the URL in question.
 		        $contents = file_get_contents($url);
 
@@ -235,20 +221,29 @@ if ( in_array('editingteacher', $rolestr) == 1 || (in_array('manager', $rolestr)
 
 
 $link = new mysqli($db_ip, $db_username, $db_password, $db_db_name, $db_port);
-$sql = "SELECT video_record_path, create_time FROM jitsi_conference_records where session_id='".$sessionnorm."'";
+$rec_ids = array();
+$sql = "SELECT record_id, video_record_path, create_time FROM jitsi_conference_records where session_id='".$sessionnorm."'";
 if($result = mysqli_query($link, $sql)){
     echo "<table><tr><th>Video Records</th></tr>";
     if(mysqli_num_rows($result) > 0){
 	    $counter=1;
         while($row = mysqli_fetch_array($result)){
             echo "<tr><td>";
+            $rec_ids[]=$row['record_id'];
             $urlparams1 = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
                 'courseid' => $course->id, 'cmid' => $id, 't' => $moderation, 'vid' => $row['record_path']);
-                echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/watch.php', $urlparams1), "Ders Kaydi - ".$sayac."- ".date('d.m.Y H:i', strtotime($row['create_time'])), 'post');
-                echo "<td></tr>";              
-            $counter=$counter + 1;
-        }
-        // Free result set
+            echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/watch.php', $urlparams1), "Ders Kaydi - ".$sayac." | ".date('d.m.Y H:i', strtotime($row['create_time'])), 'post');
+            if ( (in_array('editingteacher', $rolestr) == 1) || (in_array('manager', $rolestr) == 1) || (in_array('coursecreator', $rolestr) == 1) ) {
+                    echo "</td><td>";
+                    echo '<form method="post" onsubmit="return confirm(\'Are you sure to delete?\');">';
+                    echo '<input type="submit" name="'.$row['record_id'].'" id="'.$row['record_id'].'" value="Delete record" /><br/>';
+                    echo '</form>';
+                    echo "</td></tr>";
+            }else{
+            echo "</td></tr>";
+            }
+            $sayac=$sayac + 1;  
+        }     
         mysqli_free_result($result);
     } else{
         echo "<br><td> Record not found! </td>";
@@ -264,6 +259,21 @@ mysqli_close($link);
 
 echo $CFG->jitsi_help;
 echo $OUTPUT->footer();
+
+if ( (in_array('editingteacher', $rolestr) == 1) || (in_array('manager', $rolestr) == 1) || (in_array('coursecreator', $rolestr) == 1) ) {
+
+    foreach($rec_ids as &$i){
+            if(isset($_POST[$i] ) ){
+               $url = "your_url_web_service/jitsi_delete_video_record?param1=delete_record&param2=".$i;
+               //Once again, we use file_get_contents to GET the URL in question.
+               $contents = file_get_contents($url);
+               header("Refresh:0"); 
+               echo "Result: ".$contents;
+        }
+
+    }
+}
+
 
 /**
  * Sanitize strings
