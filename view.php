@@ -240,7 +240,10 @@ if($result = mysqli_query($link, $sql)){
     if(mysqli_num_rows($result) > 0){
 	    $counter=1;
         while($row = mysqli_fetch_array($result)){
-            echo "<br><td><a href='" . $row['video_record_path'] . "'>Video record -".$counter."</a></td>";
+            while($row = mysqli_fetch_array($result)){
+                $urlparams1 = array('avatar' => $avatar, 'nom' => $nom, 'ses' => $sesparam,
+                    'courseid' => $course->id, 'cmid' => $id, 't' => $moderation, 'vid' => $row['record_path']);
+                echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/watch.php', $urlparams1), "Video Records - ".$sayac, 'post');    
             $counter=$counter + 1;
         }
         echo "</table>";
